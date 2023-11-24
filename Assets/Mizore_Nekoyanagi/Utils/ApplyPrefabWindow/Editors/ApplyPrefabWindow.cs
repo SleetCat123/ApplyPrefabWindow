@@ -19,18 +19,6 @@ namespace MizoreNekoyanagi.PublishUtil.ApplyPrefab {
             window.Show( );
         }
 
-
-        //static List<Transform> GetTransformsRecursive( Transform root ) {
-        //    List<Transform> result = new List<Transform>();
-        //    GetTransformsRecursive( root, result );
-        //    return result;
-        //}
-        //static void GetTransformsRecursive( Transform t, List<Transform> list ) {
-        //    list.Add( t );
-        //    foreach ( Transform child in t ) {
-        //        GetTransformsRecursive( child, list );
-        //    }
-        //}
         static bool IsRecursiveChild( Transform root, Transform t ) {
             if ( root == t ) {
                 return true;
@@ -57,8 +45,6 @@ namespace MizoreNekoyanagi.PublishUtil.ApplyPrefab {
             } else {
                 log.Add( "Revert Start: " + obj );
             }
-            //var selectedPath = GameObjectPathUtil.GetObjectPath( rootObj.transform, obj.transform );
-            //log.Add( "selectedPath: " + selectedPath );
             if ( addGameObjects ) {
                 log.Add( "- AddGameObjects" );
                 var addedObjects = PrefabUtility.GetAddedGameObjects(rootObj);
@@ -127,51 +113,6 @@ namespace MizoreNekoyanagi.PublishUtil.ApplyPrefab {
                 }
                 log.Add( "" );
             }
-            //if ( componentsModify ) {
-            //    var modifications = PrefabUtility.GetPropertyModifications( rootObj );
-            //    foreach ( var item in modifications ) {
-            //        if ( item.target == null ) {
-            //            continue;
-            //        }
-            //        var targetOriginalObj = item.target as GameObject;
-            //        if ( targetOriginalObj == null ) {
-            //            targetOriginalObj = ( item.target as Component ).gameObject;
-            //        }
-            //        // GetPropertyModificationsで取得されたオブジェクトの参照先はprefabの元データになるっぽいので、オブジェクトのパスを使って処理を行う
-            //        var targetPath = GameObjectPathUtil.GetObjectPath( targetOriginalObj.transform );
-            //        var slashIndex = targetPath.IndexOf('/');
-            //        if ( slashIndex == -1 ) {
-            //            targetPath = string.Empty;
-            //        } else {
-            //            targetPath = targetPath.Substring( slashIndex + 1 );
-            //        }
-            //        if ( !targetPath.StartsWith( selectedPath ) ) {
-            //            continue;
-            //        }
-            //        log.Add( $"{targetPath}.{item.target.GetType( )}.{item.propertyPath}" );
-            //        var targetSceneObj = GameObjectPathUtil.FindObject( rootObj.transform, targetPath );
-            //        if ( item.target is GameObject ) {
-            //            if ( mode == ModifyMode.Apply ) {
-            //                PrefabUtility.ApplyObjectOverride( targetSceneObj, prefabFilrPath, InteractionMode.UserAction );
-            //            } else {
-            //                PrefabUtility.RevertObjectOverride( targetSceneObj, InteractionMode.UserAction );
-            //            }
-            //        } else {
-            //            foreach ( var component in targetSceneObj.GetComponents( item.target.GetType( ) ) ) {
-            //                var s = new SerializedObject( component );
-            //                var prop = s.FindProperty( item.propertyPath );
-            //                if ( mode == ModifyMode.Apply ) {
-            //                    PrefabUtility.ApplyPropertyOverride( prop, prefabFilrPath, InteractionMode.UserAction );
-            //                } else {
-            //                    PrefabUtility.RevertPropertyOverride( prop, InteractionMode.UserAction );
-
-            //                }
-            //            }
-            //        }
-            //        changed = true;
-            //        EditorUtility.SetDirty( targetSceneObj );
-            //    }
-            //}
             if ( mode == ModifyMode.Apply ) {
                 Debug.Log( "Apply Finished" );
                 log.Add( "Apply Finished" );
@@ -203,7 +144,6 @@ namespace MizoreNekoyanagi.PublishUtil.ApplyPrefab {
             addComponents = EditorGUILayout.Toggle( "Add Components", addComponents );
             removeComponents = EditorGUILayout.Toggle( "Remove Components", addComponents );
             objectOverrides = EditorGUILayout.Toggle( "Object Overrides", objectOverrides );
-            //componentsModify = EditorGUILayout.Toggle( "Components Modify", componentsModify );
 
             var tempColor = GUI.backgroundColor;
             GUI.backgroundColor = new Color( 0.6f, 0.8f, 1 );
