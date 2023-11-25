@@ -23,6 +23,9 @@ namespace MizoreNekoyanagi.PublishUtil.ApplyPrefab {
         bool objectOverrides = true;
         bool componentOverrides = true;
 
+        bool confirmWhenApply = true;
+        bool confirmWhenRevert = true;
+
         GameObject selectedObj;
         GameObject rootObj;
 
@@ -204,8 +207,10 @@ namespace MizoreNekoyanagi.PublishUtil.ApplyPrefab {
             if ( !b ) {
                 return false;
             }
-            if ( !EditorUtility.DisplayDialog( "Apply", $"{target}をPrefabに Apply してもよろしいですか？\n\nAre you sure you want to APPLY {target} to Prefab?", "Apply", "No" ) ) {
-                return false;
+            if ( confirmWhenApply ) {
+                if ( !EditorUtility.DisplayDialog( "Apply", $"{target}をPrefabに Apply してもよろしいですか？\n\nAre you sure you want to APPLY {target} to Prefab?", "Apply", "No" ) ) {
+                    return false;
+                }
             }
             item.Apply( );
             UpdateModifiedList( );
@@ -216,8 +221,10 @@ namespace MizoreNekoyanagi.PublishUtil.ApplyPrefab {
             if ( !GUILayout.Button( "Revert", GUILayout.Width( 50 ) ) ) {
                 return false;
             }
-            if ( !EditorUtility.DisplayDialog( "", $"{target}をRevertしてもよろしいですか？\n\nAre you sure you want to Revert {target} to Prefab?", "Yes", "No" ) ) {
-                return false;
+            if ( confirmWhenRevert ) {
+                if ( !EditorUtility.DisplayDialog( "", $"{target}をRevertしてもよろしいですか？\n\nAre you sure you want to Revert {target} to Prefab?", "Yes", "No" ) ) {
+                    return false;
+                }
             }
             item.Revert( );
             UpdateModifiedList( );
@@ -290,6 +297,8 @@ namespace MizoreNekoyanagi.PublishUtil.ApplyPrefab {
             }
             EditorGUILayout.Separator( );
 
+            confirmWhenApply = EditorGUILayout.Toggle( "Confirm When Apply", confirmWhenApply );
+            confirmWhenRevert = EditorGUILayout.Toggle( "Confirm When Revert", confirmWhenRevert );
             if ( addGameObjects ) {
                 EditorGUILayout.LabelField( "Added GameObjects:", EditorStyles.boldLabel );
                 foreach ( var item in addedObjectsList ) {
