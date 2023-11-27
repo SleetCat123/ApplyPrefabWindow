@@ -277,7 +277,14 @@ namespace MizoreNekoyanagi.PublishUtil.ApplyPrefab {
 
             EditorGUILayout.Separator( );
             scroll = EditorGUILayout.BeginScrollView( scroll );
-            EditorGUILayout.LabelField( "Components:", EditorStyles.boldLabel );
+            using ( new EditorGUILayout.HorizontalScope( ) ) {
+                EditorGUILayout.LabelField( "Components:", EditorStyles.boldLabel );
+                if ( ignoreComponents.Count != 0 ) {
+                    if ( GUILayout.Button( "Reset Selection", GUILayout.Width( 100 ) ) ) {
+                        ignoreComponents.Clear( );
+                    }
+                }
+            }
             foreach ( var item in firstComponents ) {
                 var rect = EditorGUILayout.GetControlRect();
                 var width = rect.width;
