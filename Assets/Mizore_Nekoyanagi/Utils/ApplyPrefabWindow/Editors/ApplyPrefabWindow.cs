@@ -373,7 +373,7 @@ namespace MizoreNekoyanagi.PublishUtil.ApplyPrefab {
                 log.Clear( );
                 ModifyPrefab( ModifyMode.Revert );
             }
-            scroll_log = EditorGUILayout.BeginScrollView( scroll_log );
+            scroll_log = EditorGUILayout.BeginScrollView( scroll_log, GUILayout.MaxHeight( 250 ) );
             foreach ( var item in log ) {
                 EditorGUILayout.LabelField( item );
             }
