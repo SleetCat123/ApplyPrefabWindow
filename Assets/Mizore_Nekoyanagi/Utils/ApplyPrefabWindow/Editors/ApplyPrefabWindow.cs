@@ -56,14 +56,12 @@ namespace MizoreNekoyanagi.PublishUtil.ApplyPrefab {
             var modifiedComponents = new List<Component>();
             if ( addComponents ) {
                 addedComponentsList = PrefabUtility.GetAddedComponents( rootObj );
-                addedComponentsList = addedComponentsList.Where( v => !ignoreComponents.Contains( v.instanceComponent.GetType( ).Name ) );
                 addedComponentsList = addedComponentsList.Where( v => IsRecursiveChild( selectedObj.transform, v.instanceComponent.transform ) );
 
                 modifiedComponents.AddRange( addedComponentsList.Select( v => v.instanceComponent ) );
             }
             if ( removeComponents ) {
                 removedComponentsList = PrefabUtility.GetRemovedComponents( rootObj );
-                removedComponentsList = removedComponentsList.Where( v => !ignoreComponents.Contains( v.assetComponent.GetType( ).Name ) );
                 removedComponentsList = removedComponentsList.Where( v => IsRecursiveChild( selectedObj.transform, v.containingInstanceGameObject.transform ) );
 
                 modifiedComponents.AddRange( removedComponentsList.Select( v => v.assetComponent ) );
@@ -76,7 +74,6 @@ namespace MizoreNekoyanagi.PublishUtil.ApplyPrefab {
                 }
                 if ( componentOverrides ) {
                     componentsOverridesList = list.Where( v => v.instanceObject is Component );
-                    componentsOverridesList = componentsOverridesList.Where( v => !ignoreComponents.Contains( v.instanceObject.GetType( ).Name ) );
                     componentsOverridesList = componentsOverridesList.Where( v => IsRecursiveChild( selectedObj.transform, ( v.instanceObject as Component ).transform ) );
 
                     modifiedComponents.AddRange( componentsOverridesList.Select( v => v.instanceObject as Component ) );
@@ -145,6 +142,9 @@ namespace MizoreNekoyanagi.PublishUtil.ApplyPrefab {
             if ( addComponents ) {
                 log.Add( "- AddComponents" );
                 foreach ( var item in addedComponentsList ) {
+                    if ( ignoreComponents.Contains( item.instanceComponent.GetType( ).Name ) ) {
+                        continue;
+                    }
                     log.Add( item.instanceComponent.GetType( ).ToString( ) );
                     if ( mode == ModifyMode.Apply ) {
                         item.Apply( );
@@ -157,6 +157,9 @@ namespace MizoreNekoyanagi.PublishUtil.ApplyPrefab {
             if ( removeComponents ) {
                 log.Add( "- RemoveComponents" );
                 foreach ( var item in removedComponentsList ) {
+                    if ( ignoreComponents.Contains( item.assetComponent.GetType( ).Name ) ) {
+                        continue;
+                    }
                     log.Add( item.assetComponent.GetType( ).ToString( ) );
                     if ( mode == ModifyMode.Apply ) {
                         item.Apply( );
@@ -181,6 +184,9 @@ namespace MizoreNekoyanagi.PublishUtil.ApplyPrefab {
             if ( componentOverrides ) {
                 log.Add( "- ComponentOverrides" );
                 foreach ( var item in componentsOverridesList ) {
+                    if ( ignoreComponents.Contains( item.instanceObject.GetType( ).Name ) ) {
+                        continue;
+                    }
                     log.Add( item.instanceObject.ToString( ) );
                     if ( mode == ModifyMode.Apply ) {
                         item.Apply( );
@@ -314,6 +320,9 @@ namespace MizoreNekoyanagi.PublishUtil.ApplyPrefab {
             if ( addComponents ) {
                 EditorGUILayout.LabelField( "Added Components:", EditorStyles.boldLabel );
                 foreach ( var item in addedComponentsList ) {
+                    if ( ignoreComponents.Contains( item.instanceComponent.GetType( ).Name ) ) {
+                        continue;
+                    }
                     using ( new EditorGUILayout.HorizontalScope( ) ) {
                         using ( new EditorGUI.DisabledScope( true ) ) {
                             EditorGUILayout.ObjectField( item.instanceComponent, typeof( Component ), true );
@@ -326,6 +335,9 @@ namespace MizoreNekoyanagi.PublishUtil.ApplyPrefab {
             if ( removeComponents ) {
                 EditorGUILayout.LabelField( "Removed Components:", EditorStyles.boldLabel );
                 foreach ( var item in removedComponentsList ) {
+                    if ( ignoreComponents.Contains( item.assetComponent.GetType( ).Name ) ) {
+                        continue;
+                    }
                     using ( new EditorGUILayout.HorizontalScope( ) ) {
                         using ( new EditorGUI.DisabledScope( true ) ) {
                             EditorGUILayout.ObjectField( item.assetComponent, typeof( Component ), true );
@@ -350,6 +362,9 @@ namespace MizoreNekoyanagi.PublishUtil.ApplyPrefab {
             if ( componentOverrides ) {
                 EditorGUILayout.LabelField( "Component Overrides:", EditorStyles.boldLabel );
                 foreach ( var item in componentsOverridesList ) {
+                    if ( ignoreComponents.Contains( item.instanceObject.GetType( ).Name ) ) {
+                        continue;
+                    }
                     using ( new EditorGUILayout.HorizontalScope( ) ) {
                         using ( new EditorGUI.DisabledScope( true ) ) {
                             EditorGUILayout.ObjectField( item.instanceObject, typeof( Object ), true );
