@@ -28,6 +28,9 @@ namespace MizoreNekoyanagi.PublishUtil.ApplyPrefab {
 
         GameObject selectedObj;
         GameObject rootObj;
+        PrefabAssetType prefabType;
+        bool isOverwritable;
+
 
         [MenuItem( "Mizore/Apply Prefab Window" )]
         public static void ShowWindow( ) {
@@ -49,6 +52,8 @@ namespace MizoreNekoyanagi.PublishUtil.ApplyPrefab {
                 ClearModifiedList( );
                 return;
             }
+            prefabType = PrefabUtility.GetPrefabAssetType( rootObj );
+            isOverwritable = prefabType == PrefabAssetType.Variant || prefabType == PrefabAssetType.Regular;
             if ( addGameObjects ) {
                 addedObjectsList = PrefabUtility.GetAddedGameObjects( rootObj );
                 addedObjectsList = addedObjectsList.Where( v => IsRecursiveChild( selectedObj.transform, v.instanceGameObject.transform ) );
@@ -103,19 +108,6 @@ namespace MizoreNekoyanagi.PublishUtil.ApplyPrefab {
         }
         enum ModifyMode {
             Apply, Revert
-        }
-        void OnFocus( ) {
-            if ( EditorApplication.isPlaying ) {
-                return;
-            }
-            if ( selectedObj == null || EditorUtility.IsPersistent( selectedObj ) ) {
-                return;
-            }
-            rootObj = PrefabUtility.GetNearestPrefabInstanceRoot( selectedObj );
-            if ( rootObj == null ) {
-                return;
-            }
-            UpdateModifiedList( );
         }
         void ModifyPrefab( ModifyMode mode ) {
             if ( mode == ModifyMode.Apply ) {
@@ -208,10 +200,12 @@ namespace MizoreNekoyanagi.PublishUtil.ApplyPrefab {
         bool ApplyButton( Object target, PrefabOverride item ) {
             var tempColor = GUI.backgroundColor;
             GUI.backgroundColor = new Color( 0.6f, 0.8f, 1 );
-            bool b = GUILayout.Button( "Apply", GUILayout.Width( 50 ) );
-            GUI.backgroundColor = tempColor;
-            if ( !b ) {
-                return false;
+            using ( new EditorGUI.DisabledGroupScope( !isOverwritable ) ) {
+                bool b = GUILayout.Button( "Apply", GUILayout.Width( 50 ) );
+                GUI.backgroundColor = tempColor;
+                if ( !b ) {
+                    return false;
+                }
             }
             if ( confirmWhenApply ) {
                 if ( !EditorUtility.DisplayDialog( "Apply", $"{target}をPrefabに Apply してもよろしいですか？\n\nAre you sure you want to APPLY {target} to Prefab?", "Apply", "No" ) ) {
@@ -244,6 +238,9 @@ namespace MizoreNekoyanagi.PublishUtil.ApplyPrefab {
             var prev_selectedObj = selectedObj;
             selectedObj = Selection.activeGameObject;
             if ( prev_selectedObj != selectedObj ) {
+                if ( selectedObj != null ) {
+                    rootObj = PrefabUtility.GetNearestPrefabInstanceRoot( selectedObj );
+                }
                 UpdateModifiedList( );
                 Repaint( );
             }
@@ -264,6 +261,9 @@ namespace MizoreNekoyanagi.PublishUtil.ApplyPrefab {
             using ( new EditorGUI.DisabledScope( true ) ) {
                 EditorGUILayout.ObjectField( "Selected", selectedObj, typeof( GameObject ), true );
                 EditorGUILayout.ObjectField( "Root", rootObj, typeof( GameObject ), true );
+            }
+            if ( !isOverwritable ) {
+                EditorGUILayout.HelpBox( "prefabファイルとして保存されていないオブジェクトはApplyできません。", MessageType.Warning );
             }
             EditorGUI.BeginChangeCheck( );
             addGameObjects = EditorGUILayout.Toggle( "Add GameObjects", addGameObjects );
@@ -384,11 +384,16 @@ namespace MizoreNekoyanagi.PublishUtil.ApplyPrefab {
             EditorGUILayout.EndScrollView( );
 
             EditorGUILayout.Separator( );
+            if ( !isOverwritable ) {
+                EditorGUILayout.HelpBox( "prefabファイルとして保存されていないオブジェクトはApplyできません。", MessageType.Warning );
+            }
             var tempColor = GUI.backgroundColor;
             GUI.backgroundColor = new Color( 0.6f, 0.8f, 1 );
-            if ( GUILayout.Button( "Apply Children", GUILayout.Height( 50 ) ) && EditorUtility.DisplayDialog( "Apply", "子オブジェクトをPrefabに Apply してもよろしいですか？\n\nAre you sure you want to APPLY children objects to Prefab?", "Apply", "No" ) ) {
-                log.Clear( );
-                ModifyPrefab( ModifyMode.Apply );
+            using ( new EditorGUI.DisabledGroupScope( !isOverwritable ) ) {
+                if ( GUILayout.Button( "Apply Children", GUILayout.Height( 50 ) ) && EditorUtility.DisplayDialog( "Apply", "子オブジェクトをPrefabに Apply してもよろしいですか？\n\nAre you sure you want to APPLY children objects to Prefab?", "Apply", "No" ) ) {
+                    log.Clear( );
+                    ModifyPrefab( ModifyMode.Apply );
+                }
             }
             GUI.backgroundColor = tempColor;
             if ( GUILayout.Button( "Revert Children", GUILayout.Height( 50 ) ) && EditorUtility.DisplayDialog( "", "子オブジェクトをRevertしてもよろしいですか？\n\nAre you sure you want to Revert children objects to Prefab?", "Yes", "No" ) ) {
