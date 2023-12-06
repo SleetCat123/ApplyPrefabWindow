@@ -323,15 +323,6 @@ namespace MizoreNekoyanagi.PublishUtil.ApplyPrefab {
                     Selection.activeObject = rootObj;
                 }
             }
-            using ( new EditorGUILayout.HorizontalScope( ) ) {
-                EditorGUILayout.PrefixLabel( "Selected" );
-                var icon = AssetPreview.GetMiniThumbnail( selectedObj );
-                var rect = EditorGUILayout.GetControlRect( );
-                if ( GUI.Button( rect, new GUIContent( selectedObj.name, icon ), EditorStyles.objectField ) ) {
-                    EditorGUIUtility.PingObject( selectedObj );
-                }
-            }
-            EditorGUILayout.Separator( );
             var prefabPath = PrefabUtility.GetPrefabAssetPathOfNearestInstanceRoot( rootObj );
             using ( new EditorGUILayout.HorizontalScope( ) ) {
                 EditorGUILayout.PrefixLabel( "Prefab" );
@@ -342,6 +333,14 @@ namespace MizoreNekoyanagi.PublishUtil.ApplyPrefab {
             }
             EditorGUILayout.LabelField( "Prefab Type", prefabTypeStr );
             EditorGUILayout.Separator( );
+            using ( new EditorGUILayout.HorizontalScope( ) ) {
+                EditorGUILayout.PrefixLabel( "Selected" );
+                var icon = AssetPreview.GetMiniThumbnail( selectedObj );
+                var rect = EditorGUILayout.GetControlRect( );
+                if ( GUI.Button( rect, new GUIContent( selectedObj.name, icon ), EditorStyles.objectField ) ) {
+                    EditorGUIUtility.PingObject( selectedObj );
+                }
+            }
             if ( !isOverwritable ) {
                 EditorGUILayout.HelpBox( "prefabファイルとして保存されていないオブジェクトはApplyできません。", MessageType.Warning );
             }
