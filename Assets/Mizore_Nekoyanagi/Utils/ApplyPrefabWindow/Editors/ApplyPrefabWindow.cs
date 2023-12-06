@@ -30,6 +30,7 @@ namespace MizoreNekoyanagi.PublishUtil.ApplyPrefab {
         GameObject selectedObj;
         GameObject rootObj;
         PrefabAssetType prefabType;
+        string prefabTypeStr;
         bool isOverwritable;
 
 
@@ -55,6 +56,7 @@ namespace MizoreNekoyanagi.PublishUtil.ApplyPrefab {
                 return;
             }
             prefabType = PrefabUtility.GetPrefabAssetType( rootObj );
+            prefabTypeStr = prefabType.ToString( );
             isOverwritable = prefabType == PrefabAssetType.Variant || prefabType == PrefabAssetType.Regular;
             if ( addGameObjects ) {
                 addedObjectsList = PrefabUtility.GetAddedGameObjects( rootObj );
@@ -312,10 +314,34 @@ namespace MizoreNekoyanagi.PublishUtil.ApplyPrefab {
                 EditorGUILayout.HelpBox( "prefabに属しているオブジェクトを選択してください。\nSelect the objects belonging to the prefab.", MessageType.Warning );
                 return;
             }
-            using ( new EditorGUI.DisabledScope( true ) ) {
-                EditorGUILayout.ObjectField( "Selected", selectedObj, typeof( GameObject ), true );
-                EditorGUILayout.ObjectField( "Root", rootObj, typeof( GameObject ), true );
+            using ( new EditorGUILayout.HorizontalScope( ) ) {
+                EditorGUILayout.PrefixLabel( "Root" );
+                var icon = AssetPreview.GetMiniThumbnail( rootObj );
+                var rect = EditorGUILayout.GetControlRect( );
+                if ( GUI.Button( rect, new GUIContent( rootObj.name, icon ), EditorStyles.objectField ) ) {
+                    EditorGUIUtility.PingObject( rootObj );
+                    Selection.activeObject = rootObj;
+                }
             }
+            using ( new EditorGUILayout.HorizontalScope( ) ) {
+                EditorGUILayout.PrefixLabel( "Selected" );
+                var icon = AssetPreview.GetMiniThumbnail( selectedObj );
+                var rect = EditorGUILayout.GetControlRect( );
+                if ( GUI.Button( rect, new GUIContent( selectedObj.name, icon ), EditorStyles.objectField ) ) {
+                    EditorGUIUtility.PingObject( selectedObj );
+                }
+            }
+            EditorGUILayout.Separator( );
+            var prefabPath = PrefabUtility.GetPrefabAssetPathOfNearestInstanceRoot( rootObj );
+            using ( new EditorGUILayout.HorizontalScope( ) ) {
+                EditorGUILayout.PrefixLabel( "Prefab" );
+                if ( GUILayout.Button( prefabPath, EditorStyles.objectField ) ) {
+                    var prefab = AssetDatabase.LoadAssetAtPath<GameObject>( prefabPath );
+                    EditorGUIUtility.PingObject( prefab );
+                }
+            }
+            EditorGUILayout.LabelField( "Prefab Type", prefabTypeStr );
+            EditorGUILayout.Separator( );
             if ( !isOverwritable ) {
                 EditorGUILayout.HelpBox( "prefabファイルとして保存されていないオブジェクトはApplyできません。", MessageType.Warning );
             }
@@ -408,7 +434,6 @@ namespace MizoreNekoyanagi.PublishUtil.ApplyPrefab {
                     }
                 }
             }
-            var prefabPath = PrefabUtility.GetPrefabAssetPathOfNearestInstanceRoot( rootObj );
             if ( objectOverrides ) {
                 EditorGUILayout.LabelField( "Object Overrides:", EditorStyles.boldLabel );
                 foreach ( var item in objectsOverridesList ) {
