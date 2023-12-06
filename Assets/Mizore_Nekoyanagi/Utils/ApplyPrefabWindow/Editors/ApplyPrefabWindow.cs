@@ -408,6 +408,7 @@ namespace MizoreNekoyanagi.PublishUtil.ApplyPrefab {
                     }
                 }
             }
+            var prefabPath = PrefabUtility.GetPrefabAssetPathOfNearestInstanceRoot( rootObj );
             if ( objectOverrides ) {
                 EditorGUILayout.LabelField( "Object Overrides:", EditorStyles.boldLabel );
                 foreach ( var item in objectsOverridesList ) {
@@ -418,10 +419,31 @@ namespace MizoreNekoyanagi.PublishUtil.ApplyPrefab {
                         ApplyButton( item.instanceObject, item );
                         RevertButton( item.instanceObject, item );
                     }
+                    var original = item.GetAssetObject( );
+                    EditorGUI.indentLevel++;
+                    List<PropertyModification> list;
+                    if ( propertyModifications.TryGetValue( original, out list ) ) {
+                        foreach ( var modify in list ) {
+                            var originalSerializedObject  = new SerializedObject( original );
+                            var originalProp = originalSerializedObject.FindProperty(modify.propertyPath);
+                            var itemSerializedObject = new SerializedObject( item.instanceObject );
+                            var itemProp = itemSerializedObject.FindProperty( modify.propertyPath );
+                            using ( new EditorGUILayout.HorizontalScope( ) ) {
+                                EditorGUILayout.LabelField( new GUIContent( modify.propertyPath, modify.propertyPath ) );
+                                EditorGUI.BeginDisabledGroup( true );
+                                EditorGUILayout.PropertyField( originalProp, GUIContent.none, true );
+                                EditorGUILayout.LabelField( " -> ", GUILayout.Width( 50 ) );
+                                EditorGUILayout.PropertyField( itemProp, GUIContent.none, true );
+                                EditorGUI.EndDisabledGroup( );
+                                ApplyButton( itemProp, prefabPath );
+                                RevertButton( itemProp );
+                            }
+                        }
+                    }
+                    EditorGUI.indentLevel--;
                 }
             }
             if ( componentOverrides ) {
-                var prefabPath = PrefabUtility.GetPrefabAssetPathOfNearestInstanceRoot( rootObj );
                 EditorGUILayout.LabelField( "Component Overrides:", EditorStyles.boldLabel );
                 foreach ( var item in componentsOverridesList ) {
                     if ( ignoreComponents.Contains( item.instanceObject.GetType( ).Name ) ) {
