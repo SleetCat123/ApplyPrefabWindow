@@ -1,0 +1,22 @@
+{
+  "name": "com.mizore-nekoyanagi.utils.apply-prefab-window",
+  "version": "1.0.0",
+  "displayName": "ApplyPrefabWindow",
+  "description": "選択したファイル／フォルダの履歴を表示したり、ブックマークしたりできるウィンドウを追加します。",
+  "author": {
+    "name" : "Mizore Nekoyanagi",
+  },
+  "keywords": [
+    "MizoreNekoyanagi",
+    "Script",
+    "EditorWindow",
+    "Bookmark",
+    "History",
+    "FileList",
+    "FolderList",
+    "AssetList"
+  ],
+  "documentationUrl": "https://github.com/SleetCat123/ApplyPrefabWindow",
+  "license": "MIT",
+  "licensesUrl": "https://github.com/SleetCat123/ApplyPrefabWindow/blob/main/LICENSE"
+}
