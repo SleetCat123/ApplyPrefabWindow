@@ -4,7 +4,7 @@
   "displayName": "ApplyPrefabWindow",
   "description": "選択したファイル／フォルダの履歴を表示したり、ブックマークしたりできるウィンドウを追加します。",
   "author": {
-    "name" : "Mizore Nekoyanagi",
+    "name" : "Mizore Nekoyanagi"
   },
   "keywords": [
     "MizoreNekoyanagi",
