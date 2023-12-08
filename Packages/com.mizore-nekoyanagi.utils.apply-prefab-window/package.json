@@ -2,7 +2,7 @@
   "name": "com.mizore-nekoyanagi.utils.apply-prefab-window",
   "version": "1.0.0",
   "displayName": "ApplyPrefabWindow",
-  "description": "選択したファイル／フォルダの履歴を表示したり、ブックマークしたりできるウィンドウを追加します。",
+  "description": "選択中のオブジェクトの小階層以下だけをPrefabにApply/Revertするウィンドウを追加します。",
   "author": {
     "name" : "Mizore Nekoyanagi"
   },
