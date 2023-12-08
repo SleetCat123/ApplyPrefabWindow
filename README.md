@@ -7,5 +7,5 @@
 Package Managerで導入するときは以下のURLを使用してください。  
 `https://github.com/SleetCat123/ApplyPrefabWindow.git?path=Packages\com.mizore-nekoyanagi.utils.apply-prefab-window` 
 
-VRC CreatorCompanion (VPM)での導入はこちらから
-`https://sleetcat123.github.io/vpm-packages/`
+VRC CreatorCompanion (VPM)での導入はこちらから  
+https://sleetcat123.github.io/vpm-packages/
