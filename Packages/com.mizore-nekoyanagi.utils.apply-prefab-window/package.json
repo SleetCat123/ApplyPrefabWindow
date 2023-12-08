@@ -1,6 +1,6 @@
 {
   "name": "com.mizore-nekoyanagi.utils.apply-prefab-window",
-  "version": "1.0.1",
+  "version": "1.0.0",
   "displayName": "ApplyPrefabWindow",
   "description": "選択中のオブジェクトの小階層以下だけをPrefabにApply/Revertするウィンドウを追加します。",
   "author": {
@@ -10,11 +10,9 @@
     "MizoreNekoyanagi",
     "Script",
     "EditorWindow",
-    "Bookmark",
-    "History",
-    "FileList",
-    "FolderList",
-    "AssetList"
+    "Prefab",
+    "Apply",
+    "Revert"
   ],
   "documentationUrl": "https://github.com/SleetCat123/ApplyPrefabWindow",
   "license": "MIT",
