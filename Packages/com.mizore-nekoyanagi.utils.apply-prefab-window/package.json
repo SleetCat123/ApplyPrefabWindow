@@ -1,6 +1,6 @@
 {
   "name": "com.mizore-nekoyanagi.utils.apply-prefab-window",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "displayName": "ApplyPrefabWindow",
   "description": "選択中のオブジェクトの小階層以下だけをPrefabにApply/Revertするウィンドウを追加します。",
   "author": {
