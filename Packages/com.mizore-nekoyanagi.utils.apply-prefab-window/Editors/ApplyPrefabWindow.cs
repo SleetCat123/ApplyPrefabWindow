@@ -492,9 +492,17 @@ namespace MizoreNekoyanagi.PublishUtil.ApplyPrefab {
                             using ( new EditorGUILayout.HorizontalScope( ) ) {
                                 EditorGUILayout.LabelField( new GUIContent( modify.propertyPath, modify.propertyPath ) );
                                 EditorGUI.BeginDisabledGroup( true );
-                                EditorGUILayout.PropertyField( originalProp, GUIContent.none, true );
+                                if ( originalProp == null ) {
+                                    EditorGUILayout.LabelField( "null" );
+                                } else {
+                                    EditorGUILayout.PropertyField( originalProp, GUIContent.none, true );
+                                }
                                 EditorGUILayout.LabelField( " -> ", GUILayout.Width( 50 ) );
-                                EditorGUILayout.PropertyField( itemProp, GUIContent.none, true );
+                                if ( itemProp == null ) {
+                                    EditorGUILayout.LabelField( "null" );
+                                } else {
+                                    EditorGUILayout.PropertyField( itemProp, GUIContent.none, true );
+                                }
                                 EditorGUI.EndDisabledGroup( );
                                 ApplyButton( itemProp, prefabPath );
                                 RevertButton( itemProp );
