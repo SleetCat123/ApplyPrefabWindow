@@ -3,3 +3,6 @@
 指定した種類のコンポーネントのみをApply／Revertすることもできます。  
 
 ツールバーの`Mizore->Apply Prefab Window`から開けます。  
+
+Package Managerで導入するときは以下のURLを使用してください。  
+`https://github.com/SleetCat123/ApplyPrefabWindow.git`  
