@@ -142,6 +142,15 @@ namespace MizoreNekoyanagi.PublishUtil.ApplyPrefab {
             }
             return false;
         }
+
+        void DrawSeparator( float height = 1 ) {
+            var rect = EditorGUILayout.GetControlRect( GUILayout.Height( 10 ) );
+            rect = EditorGUI.IndentedRect( rect );
+            rect.y += rect.height / 2 - height / 2;
+            rect.height = height;
+            EditorGUI.DrawRect( rect, new Color( 0.5f, 0.5f, 0.5f, 1 ) );
+        }
+
         enum ModifyMode {
             Apply, Revert
         }
@@ -331,6 +340,9 @@ namespace MizoreNekoyanagi.PublishUtil.ApplyPrefab {
                 EditorGUILayout.HelpBox( "Playモード中は使用できません。\nCannot be used during Play mode.", MessageType.Warning );
                 return;
             }
+            if ( GUILayout.Button( "Refresh", GUILayout.Width( 100 ) ) ) {
+                UpdateModifiedList( );
+            }
             if ( selectedObj == null || EditorUtility.IsPersistent( selectedObj ) ) {
                 EditorGUILayout.HelpBox( "シーン上にあるGameObjectを選択してください。\nSelect a GameObject on the scene.", MessageType.Warning );
                 return;
@@ -355,7 +367,7 @@ namespace MizoreNekoyanagi.PublishUtil.ApplyPrefab {
                 }
             }
             EditorGUILayout.LabelField( "Prefab Type", prefabTypeStr );
-            EditorGUILayout.Separator( );
+            DrawSeparator( );
             using ( new EditorGUILayout.HorizontalScope( ) ) {
                 EditorGUILayout.PrefixLabel( "Selected" );
                 var icon = AssetPreview.GetMiniThumbnail( selectedObj );
@@ -377,8 +389,12 @@ namespace MizoreNekoyanagi.PublishUtil.ApplyPrefab {
             if ( EditorGUI.EndChangeCheck( ) ) {
                 UpdateModifiedList( );
             }
+            DrawSeparator( );
 
-            EditorGUILayout.Separator( );
+            confirmWhenApply = EditorGUILayout.Toggle( "Confirm When Apply", confirmWhenApply );
+            confirmWhenRevert = EditorGUILayout.Toggle( "Confirm When Revert", confirmWhenRevert );
+
+            DrawSeparator( 3 );
             scroll = EditorGUILayout.BeginScrollView( scroll );
             using ( new EditorGUILayout.HorizontalScope( ) ) {
                 EditorGUILayout.LabelField( "Components:", EditorStyles.boldLabel );
@@ -411,11 +427,9 @@ namespace MizoreNekoyanagi.PublishUtil.ApplyPrefab {
                     }
                 }
             }
-            EditorGUILayout.Separator( );
 
-            confirmWhenApply = EditorGUILayout.Toggle( "Confirm When Apply", confirmWhenApply );
-            confirmWhenRevert = EditorGUILayout.Toggle( "Confirm When Revert", confirmWhenRevert );
             if ( addGameObjects ) {
+                DrawSeparator( );
                 EditorGUILayout.LabelField( "Added GameObjects:", EditorStyles.boldLabel );
                 foreach ( var item in addedObjectsList ) {
                     using ( new EditorGUILayout.HorizontalScope( ) ) {
@@ -428,6 +442,7 @@ namespace MizoreNekoyanagi.PublishUtil.ApplyPrefab {
                 }
             }
             if ( addComponents ) {
+                DrawSeparator( );
                 EditorGUILayout.LabelField( "Added Components:", EditorStyles.boldLabel );
                 foreach ( var item in addedComponentsList ) {
                     if ( ignoreComponents.Contains( item.instanceComponent.GetType( ).Name ) ) {
@@ -443,6 +458,7 @@ namespace MizoreNekoyanagi.PublishUtil.ApplyPrefab {
                 }
             }
             if ( removeGameObjects ) {
+                DrawSeparator( );
                 EditorGUILayout.LabelField( "Removed GameObjects:", EditorStyles.boldLabel );
                 foreach ( var item in removedObjectsList ) {
                     using ( new EditorGUILayout.HorizontalScope( ) ) {
@@ -459,6 +475,7 @@ namespace MizoreNekoyanagi.PublishUtil.ApplyPrefab {
                 }
             }
             if ( removeComponents ) {
+                DrawSeparator( );
                 EditorGUILayout.LabelField( "Removed Components:", EditorStyles.boldLabel );
                 foreach ( var item in removedComponentsList ) {
                     if ( ignoreComponents.Contains( item.assetComponent.GetType( ).Name ) ) {
@@ -474,6 +491,7 @@ namespace MizoreNekoyanagi.PublishUtil.ApplyPrefab {
                 }
             }
             if ( objectOverrides ) {
+                DrawSeparator( );
                 EditorGUILayout.LabelField( "Object Overrides:", EditorStyles.boldLabel );
                 foreach ( var item in objectsOverridesList ) {
                     using ( new EditorGUILayout.HorizontalScope( ) ) {
@@ -508,6 +526,7 @@ namespace MizoreNekoyanagi.PublishUtil.ApplyPrefab {
                 }
             }
             if ( componentOverrides ) {
+                DrawSeparator( );
                 EditorGUILayout.LabelField( "Component Overrides:", EditorStyles.boldLabel );
                 foreach ( var item in componentsOverridesList ) {
                     if ( ignoreComponents.Contains( item.instanceObject.GetType( ).Name ) ) {
@@ -563,6 +582,7 @@ namespace MizoreNekoyanagi.PublishUtil.ApplyPrefab {
                                 ApplyButton( itemProp, prefabFilePath );
                                 RevertButton( itemProp );
                             }
+                            DrawSeparator( );
                         }
                     }
                     EditorGUI.indentLevel--;
@@ -570,7 +590,7 @@ namespace MizoreNekoyanagi.PublishUtil.ApplyPrefab {
             }
             EditorGUILayout.EndScrollView( );
 
-            EditorGUILayout.Separator( );
+            DrawSeparator( );
             if ( !isOverwritable ) {
                 EditorGUILayout.HelpBox( "prefabファイルとして保存されていないオブジェクトはApplyできません。", MessageType.Warning );
             }
