@@ -15,17 +15,21 @@ namespace MizoreNekoyanagi.PublishUtil.ApplyPrefab {
         HashSet<string> ignoreComponents = new HashSet<string>();
         IEnumerable<AddedGameObject> addedObjectsList = new List<AddedGameObject>();
         IEnumerable<AddedComponent> addedComponentsList = new List<AddedComponent>();
-        IEnumerable<RemovedGameObject> removedObjectsList = new List<RemovedGameObject>();
         IEnumerable<RemovedComponent> removedComponentsList = new List<RemovedComponent>();
         IEnumerable<ObjectOverride> objectsOverridesList = new List<ObjectOverride>();
         IEnumerable<ObjectOverride> componentsOverridesList = new List<ObjectOverride>();
+#if UNITY_2022_1_OR_NEWER
+        IEnumerable<RemovedGameObject> removedObjectsList = new List<RemovedGameObject>();
+#endif
         Dictionary<Object, List<PropertyModification>> propertyModifications = new Dictionary<Object, List<PropertyModification>>();
         bool addGameObjects = true;
         bool addComponents = true;
-        bool removeGameObjects = true;
         bool removeComponents = true;
         bool objectOverrides = true;
         bool componentOverrides = true;
+#if UNITY_2022_1_OR_NEWER
+        bool removeGameObjects = true;
+#endif
 
         bool confirmWhenApply = true;
         bool confirmWhenRevert = true;
@@ -52,10 +56,12 @@ namespace MizoreNekoyanagi.PublishUtil.ApplyPrefab {
             firstComponents.Clear( );
             addedObjectsList = new List<AddedGameObject>( );
             addedComponentsList = new List<AddedComponent>( );
-            removedObjectsList = new List<RemovedGameObject>( );
             removedComponentsList = new List<RemovedComponent>( );
             objectsOverridesList = new List<ObjectOverride>( );
             componentsOverridesList = new List<ObjectOverride>( );
+#if UNITY_2022_1_OR_NEWER
+            removedObjectsList = new List<RemovedGameObject>( );
+#endif
             selectedComponent = null;
             propertyModifications.Clear( );
         }
@@ -85,10 +91,12 @@ namespace MizoreNekoyanagi.PublishUtil.ApplyPrefab {
 
                 modifiedComponents.AddRange( addedComponentsList.Select( v => v.instanceComponent ) );
             }
+#if UNITY_2022_1_OR_NEWER
             if ( removeGameObjects ) {
                 removedObjectsList = PrefabUtility.GetRemovedGameObjects( rootObj );
                 removedObjectsList = removedObjectsList.Where( v => IsRecursiveChild( selectedObj.transform, v.parentOfRemovedGameObjectInInstance.transform ) );
             }
+#endif
             if ( removeComponents ) {
                 removedComponentsList = PrefabUtility.GetRemovedComponents( rootObj );
                 removedComponentsList = removedComponentsList.Where( v => IsRecursiveChild( selectedObj.transform, v.containingInstanceGameObject.transform ) );
@@ -208,6 +216,7 @@ namespace MizoreNekoyanagi.PublishUtil.ApplyPrefab {
                 UpdateModifiedList( );
                 log.Add( "" );
             }
+#if UNITY_2022_1_OR_NEWER
             if ( removeGameObjects && mode != ModifyMode.RevertSameValue ) {
                 log.Add( "- RemoveGameObjects" );
                 foreach ( var item in removedObjectsList ) {
@@ -225,6 +234,7 @@ namespace MizoreNekoyanagi.PublishUtil.ApplyPrefab {
                 UpdateModifiedList( );
                 log.Add( "" );
             }
+#endif
             if ( removeComponents && mode != ModifyMode.RevertSameValue ) {
                 log.Add( "- RemoveComponents" );
                 foreach ( var item in removedComponentsList ) {
@@ -514,7 +524,9 @@ namespace MizoreNekoyanagi.PublishUtil.ApplyPrefab {
             EditorGUI.BeginChangeCheck( );
             addGameObjects = EditorGUILayout.Toggle( "Add GameObjects", addGameObjects );
             addComponents = EditorGUILayout.Toggle( "Add Components", addComponents );
+#if UNITY_2022_1_OR_NEWER
             removeGameObjects = EditorGUILayout.Toggle( "Remove GameObjects", removeGameObjects );
+#endif
             removeComponents = EditorGUILayout.Toggle( "Remove Components", removeComponents );
             objectOverrides = EditorGUILayout.Toggle( "Object Overrides", objectOverrides );
             componentOverrides = EditorGUILayout.Toggle( "Component Overrides", componentOverrides );
@@ -589,6 +601,7 @@ namespace MizoreNekoyanagi.PublishUtil.ApplyPrefab {
                     }
                 }
             }
+#if UNITY_2022_1_OR_NEWER
             if ( removeGameObjects ) {
                 DrawSeparator( );
                 EditorGUILayout.LabelField( "Removed GameObjects:", EditorStyles.boldLabel );
@@ -606,6 +619,7 @@ namespace MizoreNekoyanagi.PublishUtil.ApplyPrefab {
                     }
                 }
             }
+#endif
             if ( removeComponents ) {
                 DrawSeparator( );
                 EditorGUILayout.LabelField( "Removed Components:", EditorStyles.boldLabel );
