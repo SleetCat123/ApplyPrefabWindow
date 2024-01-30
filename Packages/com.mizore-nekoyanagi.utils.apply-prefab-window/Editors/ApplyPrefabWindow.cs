@@ -4,6 +4,7 @@ using UnityEditor;
 using UnityEngine;
 using System.Linq;
 using UnityEditor.SceneManagement;
+using System.Runtime.InteropServices;
 
 namespace MizoreNekoyanagi.PublishUtil.ApplyPrefab {
     public class ApplyPrefabWindow : EditorWindow {
@@ -14,18 +15,25 @@ namespace MizoreNekoyanagi.PublishUtil.ApplyPrefab {
         HashSet<string> ignoreComponents = new HashSet<string>();
         IEnumerable<AddedGameObject> addedObjectsList = new List<AddedGameObject>();
         IEnumerable<AddedComponent> addedComponentsList = new List<AddedComponent>();
+        IEnumerable<RemovedGameObject> removedObjectsList = new List<RemovedGameObject>();
         IEnumerable<RemovedComponent> removedComponentsList = new List<RemovedComponent>();
         IEnumerable<ObjectOverride> objectsOverridesList = new List<ObjectOverride>();
         IEnumerable<ObjectOverride> componentsOverridesList = new List<ObjectOverride>();
         Dictionary<Object, List<PropertyModification>> propertyModifications = new Dictionary<Object, List<PropertyModification>>();
         bool addGameObjects = true;
         bool addComponents = true;
+        bool removeGameObjects = true;
         bool removeComponents = true;
         bool objectOverrides = true;
         bool componentOverrides = true;
 
         bool confirmWhenApply = true;
         bool confirmWhenRevert = true;
+
+        Object selectedComponent;
+
+        string prefabFilePath;
+        GameObject prefabFileAsset;
 
         GameObject selectedObj;
         GameObject rootObj;
@@ -44,19 +52,27 @@ namespace MizoreNekoyanagi.PublishUtil.ApplyPrefab {
             firstComponents.Clear( );
             addedObjectsList = new List<AddedGameObject>( );
             addedComponentsList = new List<AddedComponent>( );
+            removedObjectsList = new List<RemovedGameObject>( );
             removedComponentsList = new List<RemovedComponent>( );
             objectsOverridesList = new List<ObjectOverride>( );
             componentsOverridesList = new List<ObjectOverride>( );
+            selectedComponent = null;
             propertyModifications.Clear( );
         }
 
         public void UpdateModifiedList( ) {
+            if ( EditorApplication.isPlaying ) {
+                ClearModifiedList( );
+                return;
+            }
             if ( selectedObj == null || rootObj == null ) {
                 ClearModifiedList( );
                 return;
             }
             prefabType = PrefabUtility.GetPrefabAssetType( rootObj );
             prefabTypeStr = prefabType.ToString( );
+            prefabFilePath = PrefabUtility.GetPrefabAssetPathOfNearestInstanceRoot( rootObj );
+            prefabFileAsset = AssetDatabase.LoadAssetAtPath<GameObject>( prefabFilePath );
             isOverwritable = prefabType == PrefabAssetType.Variant || prefabType == PrefabAssetType.Regular;
             if ( addGameObjects ) {
                 addedObjectsList = PrefabUtility.GetAddedGameObjects( rootObj );
@@ -69,10 +85,13 @@ namespace MizoreNekoyanagi.PublishUtil.ApplyPrefab {
 
                 modifiedComponents.AddRange( addedComponentsList.Select( v => v.instanceComponent ) );
             }
+            if ( removeGameObjects ) {
+                removedObjectsList = PrefabUtility.GetRemovedGameObjects( rootObj );
+                removedObjectsList = removedObjectsList.Where( v => IsRecursiveChild( selectedObj.transform, v.parentOfRemovedGameObjectInInstance.transform ) );
+            }
             if ( removeComponents ) {
                 removedComponentsList = PrefabUtility.GetRemovedComponents( rootObj );
                 removedComponentsList = removedComponentsList.Where( v => IsRecursiveChild( selectedObj.transform, v.containingInstanceGameObject.transform ) );
-
                 modifiedComponents.AddRange( removedComponentsList.Select( v => v.assetComponent ) );
             }
             if ( objectOverrides || componentOverrides ) {
@@ -91,6 +110,9 @@ namespace MizoreNekoyanagi.PublishUtil.ApplyPrefab {
             var modifications = PrefabUtility.GetPropertyModifications( rootObj );
             propertyModifications.Clear( );
             foreach ( var item in modifications ) {
+                if ( item.target == null ) {
+                    continue;
+                }
                 List<PropertyModification> list;
                 if ( !propertyModifications.TryGetValue( item.target, out list ) ) {
                     list = new List<PropertyModification>( );
@@ -121,71 +143,129 @@ namespace MizoreNekoyanagi.PublishUtil.ApplyPrefab {
             }
             return false;
         }
+
+        void DrawSeparator( float height = 1 ) {
+            var rect = EditorGUILayout.GetControlRect( GUILayout.Height( 10 ) );
+            rect = EditorGUI.IndentedRect( rect );
+            rect.y += rect.height / 2 - height / 2;
+            rect.height = height;
+            EditorGUI.DrawRect( rect, new Color( 0.5f, 0.5f, 0.5f, 1 ) );
+        }
+
         enum ModifyMode {
-            Apply, Revert
+            Apply, Revert, RevertSameValue
         }
         void ModifyPrefab( ModifyMode mode ) {
-            if ( mode == ModifyMode.Apply ) {
-                var prefabFilrPath = PrefabUtility.GetPrefabAssetPathOfNearestInstanceRoot( rootObj );
-                Debug.Log( "Prefab FilrPath: " + prefabFilrPath );
-                log.Add( "Apply Start: " + selectedObj );
-                log.Add( "Prefab FilrPath: " + prefabFilrPath );
-            } else {
-                log.Add( "Revert Start: " + selectedObj );
+            switch ( mode ) {
+                case ModifyMode.Apply:
+                    var prefabFilrPath = PrefabUtility.GetPrefabAssetPathOfNearestInstanceRoot( rootObj );
+                    Debug.Log( "Prefab FilrPath: " + prefabFilrPath );
+                    log.Add( "Apply Start: " + selectedObj );
+                    log.Add( "Prefab FilrPath: " + prefabFilrPath );
+                    break;
+                case ModifyMode.Revert:
+                    log.Add( "Revert Start: " + selectedObj );
+                    break;
+                case ModifyMode.RevertSameValue:
+                    log.Add( "Revert Same Value Start: " + selectedObj );
+                    break;
             }
             UpdateModifiedList( );
-            if ( addGameObjects ) {
+            if ( addGameObjects && mode != ModifyMode.RevertSameValue ) {
                 log.Add( "- AddGameObjects" );
                 foreach ( var item in addedObjectsList ) {
-                    log.Add( item.instanceGameObject.ToString( ) );
-                    if ( mode == ModifyMode.Apply ) {
-                        item.Apply( );
-                    } else {
-                        item.Revert( );
+                    switch ( mode ) {
+                        case ModifyMode.Apply:
+                            log.Add( item.instanceGameObject.ToString( ) );
+                            item.Apply( );
+                            break;
+                        case ModifyMode.Revert:
+                            log.Add( item.instanceGameObject.ToString( ) );
+                            item.Revert( );
+                            break;
                     }
                 }
+                UpdateModifiedList( );
                 log.Add( "" );
             }
-            if ( addComponents ) {
+            if ( addComponents && mode != ModifyMode.RevertSameValue ) {
                 log.Add( "- AddComponents" );
                 foreach ( var item in addedComponentsList ) {
                     if ( ignoreComponents.Contains( item.instanceComponent.GetType( ).Name ) ) {
                         continue;
                     }
-                    log.Add( item.instanceComponent.GetType( ).ToString( ) );
-                    if ( mode == ModifyMode.Apply ) {
-                        item.Apply( );
-                    } else {
-                        item.Revert( );
+                    switch ( mode ) {
+                        case ModifyMode.Apply:
+                            log.Add( item.instanceComponent.GetType( ).ToString( ) );
+                            item.Apply( );
+                            break;
+                        case ModifyMode.Revert:
+                            log.Add( item.instanceComponent.GetType( ).ToString( ) );
+                            item.Revert( );
+                            break;
                     }
                 }
+                UpdateModifiedList( );
                 log.Add( "" );
             }
-            if ( removeComponents ) {
+            if ( removeGameObjects && mode != ModifyMode.RevertSameValue ) {
+                log.Add( "- RemoveGameObjects" );
+                foreach ( var item in removedObjectsList ) {
+                    switch ( mode ) {
+                        case ModifyMode.Apply:
+                            log.Add( item.parentOfRemovedGameObjectInInstance.ToString( ) );
+                            item.Apply( );
+                            break;
+                        case ModifyMode.Revert:
+                            log.Add( item.parentOfRemovedGameObjectInInstance.ToString( ) );
+                            item.Revert( );
+                            break;
+                    }
+                }
+                UpdateModifiedList( );
+                log.Add( "" );
+            }
+            if ( removeComponents && mode != ModifyMode.RevertSameValue ) {
                 log.Add( "- RemoveComponents" );
                 foreach ( var item in removedComponentsList ) {
                     if ( ignoreComponents.Contains( item.assetComponent.GetType( ).Name ) ) {
                         continue;
                     }
-                    log.Add( item.assetComponent.GetType( ).ToString( ) );
-                    if ( mode == ModifyMode.Apply ) {
-                        item.Apply( );
-                    } else {
-                        item.Revert( );
+                    switch ( mode ) {
+                        case ModifyMode.Apply:
+                            log.Add( item.assetComponent.GetType( ).ToString( ) );
+                            item.Apply( );
+                            break;
+                        case ModifyMode.Revert:
+                            log.Add( item.assetComponent.GetType( ).ToString( ) );
+                            item.Revert( );
+                            break;
                     }
                 }
+                UpdateModifiedList( );
                 log.Add( "" );
             }
             if ( objectOverrides ) {
                 log.Add( "- ObjectOverrides" );
                 foreach ( var item in objectsOverridesList ) {
-                    log.Add( item.instanceObject.ToString( ) );
-                    if ( mode == ModifyMode.Apply ) {
-                        item.Apply( );
-                    } else {
-                        item.Revert( );
+                    switch ( mode ) {
+                        case ModifyMode.Apply:
+                            log.Add( item.instanceObject.ToString( ) );
+                            item.Apply( );
+                            break;
+                        case ModifyMode.Revert:
+                            log.Add( item.instanceObject.ToString( ) );
+                            item.Revert( );
+                            break;
+                        case ModifyMode.RevertSameValue:
+                            bool b = RevertSameValue( item );
+                            if ( b ) {
+                                log.Add( item.instanceObject.ToString( ) );
+                            }
+                            break;
                     }
                 }
+                UpdateModifiedList( );
                 log.Add( "" );
             }
             if ( componentOverrides ) {
@@ -194,13 +274,24 @@ namespace MizoreNekoyanagi.PublishUtil.ApplyPrefab {
                     if ( ignoreComponents.Contains( item.instanceObject.GetType( ).Name ) ) {
                         continue;
                     }
-                    log.Add( item.instanceObject.ToString( ) );
-                    if ( mode == ModifyMode.Apply ) {
-                        item.Apply( );
-                    } else {
-                        item.Revert( );
+                    switch ( mode ) {
+                        case ModifyMode.Apply:
+                            log.Add( item.instanceObject.ToString( ) );
+                            item.Apply( );
+                            break;
+                        case ModifyMode.Revert:
+                            log.Add( item.instanceObject.ToString( ) );
+                            item.Revert( );
+                            break;
+                        case ModifyMode.RevertSameValue:
+                            bool b = RevertSameValue( item );
+                            if ( b ) {
+                                log.Add( item.instanceObject.ToString( ) );
+                            }
+                            break;
                     }
                 }
+                UpdateModifiedList( );
                 log.Add( "" );
             }
             if ( mode == ModifyMode.Apply ) {
@@ -210,7 +301,6 @@ namespace MizoreNekoyanagi.PublishUtil.ApplyPrefab {
                 Debug.Log( "Revert Finished" );
                 log.Add( "Revert Finished" );
             }
-            UpdateModifiedList( );
         }
         bool ApplyButton( Object target, PrefabOverride item ) {
             var tempColor = GUI.backgroundColor;
@@ -280,6 +370,50 @@ namespace MizoreNekoyanagi.PublishUtil.ApplyPrefab {
             UpdateModifiedList( );
             return true;
         }
+        bool RevertSameValueButton( ObjectOverride item ) {
+            var content = new GUIContent( "Revert Same Value", "prefabファイルと同じ値をRevertします" );
+            if ( !GUILayout.Button( content, GUILayout.Width( 120 ) ) ) {
+                return false;
+            }
+            var sameValues = GetSameValues( item );
+            if ( sameValues == null || sameValues.Count == 0 ) {
+                Debug.Log( "Revert可能な値がありません" );
+                return false;
+            }
+            if ( confirmWhenRevert ) {
+                var sb = new System.Text.StringBuilder( );
+                foreach ( var v in sameValues ) {
+                    sb.AppendLine( v.propertyPath );
+                }
+                if ( !EditorUtility.DisplayDialog( "", $"以下の値をRevertしてもよろしいですか？\nAre you sure you want to Revert value?\n\n{sb.ToString( )}", "Yes", "No" ) ) {
+                    return false;
+                }
+            }
+            RevertSameValue( item );
+            return true;
+        }
+        bool RevertSameValueButton( SerializedObject instance, SerializedObject original, PropertyModification modification ) {
+            var content = new GUIContent( "Revert Same Value", "prefabファイルと同じ値をRevertします" );
+            if ( !GUILayout.Button( content, GUILayout.Width( 120 ) ) ) {
+                return false;
+            }
+            var instanceProp = instance.FindProperty( modification.propertyPath );
+            var assetProp = original.FindProperty( modification.propertyPath );
+            if ( instanceProp == null || assetProp == null ) {
+                return false;
+            }
+            if ( !SerializedProperty.DataEquals( instanceProp, assetProp ) ) {
+                Debug.Log( "Revert可能な値がありません" );
+                return false;
+            }
+            if ( confirmWhenRevert ) {
+                if ( !EditorUtility.DisplayDialog( "", $"以下の値をRevertしてもよろしいですか？\nAre you sure you want to Revert value?\n\n{modification.propertyPath}", "Yes", "No" ) ) {
+                    return false;
+                }
+            }
+            PrefabUtility.RevertPropertyOverride( instanceProp, InteractionMode.UserAction );
+            return true;
+        }
         void OnSelectionChange( ) {
             if ( EditorApplication.isPlaying ) {
                 return;
@@ -301,10 +435,45 @@ namespace MizoreNekoyanagi.PublishUtil.ApplyPrefab {
         private void OnFocus( ) {
             UpdateModifiedList( );
         }
+        List<SerializedProperty> GetSameValues( ObjectOverride componentOverride ) {
+            List<PropertyModification> list;
+            var original = componentOverride.GetAssetObject( );
+            if ( !propertyModifications.TryGetValue( original, out list ) ) {
+                return null;
+            }
+            List<SerializedProperty> sameValues = new List<SerializedProperty>( );
+            var instanceSerializedObject = new SerializedObject(  componentOverride.instanceObject );
+            var assetSerializedObject = new SerializedObject(  original );
+            foreach ( var item in list ) {
+                var instanceProp = instanceSerializedObject.FindProperty( item.propertyPath );
+                var assetProp = assetSerializedObject.FindProperty( item.propertyPath );
+                if ( instanceProp == null || assetProp == null ) {
+                    continue;
+                }
+                if ( SerializedProperty.DataEquals( instanceProp, assetProp ) ) {
+                    sameValues.Add( instanceProp );
+                }
+            }
+            return sameValues;
+        }
+        bool RevertSameValue( ObjectOverride componentOverride ) {
+            var sameValues = GetSameValues( componentOverride );
+            if ( sameValues == null || sameValues.Count == 0 ) {
+                return false;
+            }
+            foreach ( var item in sameValues ) {
+                PrefabUtility.RevertPropertyOverride( item, InteractionMode.UserAction );
+            }
+            UpdateModifiedList( );
+            return true;
+        }
         private void OnGUI( ) {
             if ( EditorApplication.isPlaying ) {
                 EditorGUILayout.HelpBox( "Playモード中は使用できません。\nCannot be used during Play mode.", MessageType.Warning );
                 return;
+            }
+            if ( GUILayout.Button( "Refresh", GUILayout.Width( 100 ) ) ) {
+                UpdateModifiedList( );
             }
             if ( selectedObj == null || EditorUtility.IsPersistent( selectedObj ) ) {
                 EditorGUILayout.HelpBox( "シーン上にあるGameObjectを選択してください。\nSelect a GameObject on the scene.", MessageType.Warning );
@@ -323,16 +492,14 @@ namespace MizoreNekoyanagi.PublishUtil.ApplyPrefab {
                     Selection.activeObject = rootObj;
                 }
             }
-            var prefabPath = PrefabUtility.GetPrefabAssetPathOfNearestInstanceRoot( rootObj );
             using ( new EditorGUILayout.HorizontalScope( ) ) {
                 EditorGUILayout.PrefixLabel( "Prefab" );
-                if ( GUILayout.Button( prefabPath, EditorStyles.objectField ) ) {
-                    var prefab = AssetDatabase.LoadAssetAtPath<GameObject>( prefabPath );
-                    EditorGUIUtility.PingObject( prefab );
+                if ( GUILayout.Button( prefabFilePath, EditorStyles.objectField ) ) {
+                    EditorGUIUtility.PingObject( prefabFileAsset );
                 }
             }
             EditorGUILayout.LabelField( "Prefab Type", prefabTypeStr );
-            EditorGUILayout.Separator( );
+            DrawSeparator( );
             using ( new EditorGUILayout.HorizontalScope( ) ) {
                 EditorGUILayout.PrefixLabel( "Selected" );
                 var icon = AssetPreview.GetMiniThumbnail( selectedObj );
@@ -347,14 +514,19 @@ namespace MizoreNekoyanagi.PublishUtil.ApplyPrefab {
             EditorGUI.BeginChangeCheck( );
             addGameObjects = EditorGUILayout.Toggle( "Add GameObjects", addGameObjects );
             addComponents = EditorGUILayout.Toggle( "Add Components", addComponents );
+            removeGameObjects = EditorGUILayout.Toggle( "Remove GameObjects", removeGameObjects );
             removeComponents = EditorGUILayout.Toggle( "Remove Components", removeComponents );
             objectOverrides = EditorGUILayout.Toggle( "Object Overrides", objectOverrides );
             componentOverrides = EditorGUILayout.Toggle( "Component Overrides", componentOverrides );
             if ( EditorGUI.EndChangeCheck( ) ) {
                 UpdateModifiedList( );
             }
+            DrawSeparator( );
 
-            EditorGUILayout.Separator( );
+            confirmWhenApply = EditorGUILayout.Toggle( "Confirm When Apply", confirmWhenApply );
+            confirmWhenRevert = EditorGUILayout.Toggle( "Confirm When Revert", confirmWhenRevert );
+
+            DrawSeparator( 3 );
             scroll = EditorGUILayout.BeginScrollView( scroll );
             using ( new EditorGUILayout.HorizontalScope( ) ) {
                 EditorGUILayout.LabelField( "Components:", EditorStyles.boldLabel );
@@ -387,11 +559,9 @@ namespace MizoreNekoyanagi.PublishUtil.ApplyPrefab {
                     }
                 }
             }
-            EditorGUILayout.Separator( );
 
-            confirmWhenApply = EditorGUILayout.Toggle( "Confirm When Apply", confirmWhenApply );
-            confirmWhenRevert = EditorGUILayout.Toggle( "Confirm When Revert", confirmWhenRevert );
             if ( addGameObjects ) {
+                DrawSeparator( );
                 EditorGUILayout.LabelField( "Added GameObjects:", EditorStyles.boldLabel );
                 foreach ( var item in addedObjectsList ) {
                     using ( new EditorGUILayout.HorizontalScope( ) ) {
@@ -404,6 +574,7 @@ namespace MizoreNekoyanagi.PublishUtil.ApplyPrefab {
                 }
             }
             if ( addComponents ) {
+                DrawSeparator( );
                 EditorGUILayout.LabelField( "Added Components:", EditorStyles.boldLabel );
                 foreach ( var item in addedComponentsList ) {
                     if ( ignoreComponents.Contains( item.instanceComponent.GetType( ).Name ) ) {
@@ -418,7 +589,25 @@ namespace MizoreNekoyanagi.PublishUtil.ApplyPrefab {
                     }
                 }
             }
+            if ( removeGameObjects ) {
+                DrawSeparator( );
+                EditorGUILayout.LabelField( "Removed GameObjects:", EditorStyles.boldLabel );
+                foreach ( var item in removedObjectsList ) {
+                    using ( new EditorGUILayout.HorizontalScope( ) ) {
+                        var objName = item.assetGameObject.name;
+                        var objIcon = AssetPreview.GetMiniThumbnail( item.assetGameObject );
+                        var content = new GUIContent( objName, objIcon, objName);
+                        var rect = EditorGUILayout.GetControlRect( );
+                        if ( GUI.Button( rect, content, EditorStyles.objectField ) ) {
+                            EditorGUIUtility.PingObject( item.parentOfRemovedGameObjectInInstance );
+                        }
+                        ApplyButton( item.parentOfRemovedGameObjectInInstance, item );
+                        RevertButton( item.parentOfRemovedGameObjectInInstance, item );
+                    }
+                }
+            }
             if ( removeComponents ) {
+                DrawSeparator( );
                 EditorGUILayout.LabelField( "Removed Components:", EditorStyles.boldLabel );
                 foreach ( var item in removedComponentsList ) {
                     if ( ignoreComponents.Contains( item.assetComponent.GetType( ).Name ) ) {
@@ -434,6 +623,7 @@ namespace MizoreNekoyanagi.PublishUtil.ApplyPrefab {
                 }
             }
             if ( objectOverrides ) {
+                DrawSeparator( );
                 EditorGUILayout.LabelField( "Object Overrides:", EditorStyles.boldLabel );
                 foreach ( var item in objectsOverridesList ) {
                     using ( new EditorGUILayout.HorizontalScope( ) ) {
@@ -442,6 +632,7 @@ namespace MizoreNekoyanagi.PublishUtil.ApplyPrefab {
                         }
                         ApplyButton( item.instanceObject, item );
                         RevertButton( item.instanceObject, item );
+                        RevertSameValueButton( item );
                     }
                     var original = item.GetAssetObject( );
                     EditorGUI.indentLevel++;
@@ -459,8 +650,9 @@ namespace MizoreNekoyanagi.PublishUtil.ApplyPrefab {
                                 EditorGUILayout.LabelField( " -> ", GUILayout.Width( 50 ) );
                                 EditorGUILayout.PropertyField( itemProp, GUIContent.none, true );
                                 EditorGUI.EndDisabledGroup( );
-                                ApplyButton( itemProp, prefabPath );
+                                ApplyButton( itemProp, prefabFilePath );
                                 RevertButton( itemProp );
+                                RevertSameValueButton( itemSerializedObject, originalSerializedObject, modify );
                             }
                         }
                     }
@@ -468,19 +660,37 @@ namespace MizoreNekoyanagi.PublishUtil.ApplyPrefab {
                 }
             }
             if ( componentOverrides ) {
+                DrawSeparator( );
                 EditorGUILayout.LabelField( "Component Overrides:", EditorStyles.boldLabel );
                 foreach ( var item in componentsOverridesList ) {
                     if ( ignoreComponents.Contains( item.instanceObject.GetType( ).Name ) ) {
                         continue;
                     }
                     using ( new EditorGUILayout.HorizontalScope( ) ) {
+                        if ( selectedComponent == item.instanceObject ) {
+                            if ( GUILayout.Button( "", GUILayout.Width( 20 ) ) ) {
+                                selectedComponent = null;
+                            }
+                        } else {
+                            var c = GUI.color;
+                            GUI.color = Color.gray;
+                            if ( GUILayout.Button( "", GUILayout.Width( 20 ) ) ) {
+                                selectedComponent = item.instanceObject;
+                            }
+                            GUI.color = c;
+                        }
                         using ( new EditorGUI.DisabledScope( true ) ) {
                             EditorGUILayout.ObjectField( item.instanceObject, typeof( Object ), true );
                         }
                         ApplyButton( item.instanceObject, item );
                         RevertButton( item.instanceObject, item );
+                        RevertSameValueButton( item );
                     }
                     var original = item.GetAssetObject( );
+                    if ( selectedComponent != item.instanceObject ) {
+                        continue;
+                    }
+                    // Property
                     EditorGUI.indentLevel++;
                     List<PropertyModification> list;
                     if ( propertyModifications.TryGetValue( original, out list ) ) {
@@ -504,17 +714,19 @@ namespace MizoreNekoyanagi.PublishUtil.ApplyPrefab {
                                     EditorGUILayout.PropertyField( itemProp, GUIContent.none, true );
                                 }
                                 EditorGUI.EndDisabledGroup( );
-                                ApplyButton( itemProp, prefabPath );
+                                ApplyButton( itemProp, prefabFilePath );
                                 RevertButton( itemProp );
+                                RevertSameValueButton( itemSerializedObject, originalSerializedObject, modify );
                             }
                         }
+                        DrawSeparator( );
                     }
                     EditorGUI.indentLevel--;
                 }
             }
             EditorGUILayout.EndScrollView( );
 
-            EditorGUILayout.Separator( );
+            DrawSeparator( );
             if ( !isOverwritable ) {
                 EditorGUILayout.HelpBox( "prefabファイルとして保存されていないオブジェクトはApplyできません。", MessageType.Warning );
             }
@@ -530,6 +742,10 @@ namespace MizoreNekoyanagi.PublishUtil.ApplyPrefab {
             if ( GUILayout.Button( "Revert Children", GUILayout.Height( 50 ) ) && EditorUtility.DisplayDialog( "", "子オブジェクトをRevertしてもよろしいですか？\n\nAre you sure you want to Revert children objects to Prefab?", "Yes", "No" ) ) {
                 log.Clear( );
                 ModifyPrefab( ModifyMode.Revert );
+            }
+            if ( GUILayout.Button( "Revert Same Value Children", GUILayout.Height( 50 ) ) && EditorUtility.DisplayDialog( "", "子オブジェクトの同じ値をRevertしてもよろしいですか？\n\nAre you sure you want to Revert Same Value children objects to Prefab?", "Yes", "No" ) ) {
+                log.Clear( );
+                ModifyPrefab( ModifyMode.RevertSameValue );
             }
             scroll_log = EditorGUILayout.BeginScrollView( scroll_log, GUILayout.MaxHeight( 250 ) );
             foreach ( var item in log ) {
