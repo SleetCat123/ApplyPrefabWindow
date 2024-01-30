@@ -171,7 +171,7 @@ namespace MizoreNekoyanagi.PublishUtil.ApplyPrefab {
                     break;
             }
             UpdateModifiedList( );
-            if ( addGameObjects ) {
+            if ( addGameObjects && mode != ModifyMode.RevertSameValue ) {
                 log.Add( "- AddGameObjects" );
                 foreach ( var item in addedObjectsList ) {
                     switch ( mode ) {
@@ -183,14 +183,12 @@ namespace MizoreNekoyanagi.PublishUtil.ApplyPrefab {
                             log.Add( item.instanceGameObject.ToString( ) );
                             item.Revert( );
                             break;
-                        case ModifyMode.RevertSameValue:
-                            break;
                     }
                 }
                 UpdateModifiedList( );
                 log.Add( "" );
             }
-            if ( addComponents ) {
+            if ( addComponents && mode != ModifyMode.RevertSameValue ) {
                 log.Add( "- AddComponents" );
                 foreach ( var item in addedComponentsList ) {
                     if ( ignoreComponents.Contains( item.instanceComponent.GetType( ).Name ) ) {
@@ -205,14 +203,29 @@ namespace MizoreNekoyanagi.PublishUtil.ApplyPrefab {
                             log.Add( item.instanceComponent.GetType( ).ToString( ) );
                             item.Revert( );
                             break;
-                        case ModifyMode.RevertSameValue:
+                    }
+                }
+                UpdateModifiedList( );
+                log.Add( "" );
+            }
+            if ( removeGameObjects && mode != ModifyMode.RevertSameValue ) {
+                log.Add( "- RemoveGameObjects" );
+                foreach ( var item in removedObjectsList ) {
+                    switch ( mode ) {
+                        case ModifyMode.Apply:
+                            log.Add( item.parentOfRemovedGameObjectInInstance.ToString( ) );
+                            item.Apply( );
+                            break;
+                        case ModifyMode.Revert:
+                            log.Add( item.parentOfRemovedGameObjectInInstance.ToString( ) );
+                            item.Revert( );
                             break;
                     }
                 }
                 UpdateModifiedList( );
                 log.Add( "" );
             }
-            if ( removeComponents ) {
+            if ( removeComponents && mode != ModifyMode.RevertSameValue ) {
                 log.Add( "- RemoveComponents" );
                 foreach ( var item in removedComponentsList ) {
                     if ( ignoreComponents.Contains( item.assetComponent.GetType( ).Name ) ) {
@@ -226,8 +239,6 @@ namespace MizoreNekoyanagi.PublishUtil.ApplyPrefab {
                         case ModifyMode.Revert:
                             log.Add( item.assetComponent.GetType( ).ToString( ) );
                             item.Revert( );
-                            break;
-                        case ModifyMode.RevertSameValue:
                             break;
                     }
                 }
