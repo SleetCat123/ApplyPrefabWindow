@@ -1,4 +1,5 @@
 # ChangeLog
+## [1.1.0] (2024-01-30)
 - add: RemovedObjectのApply／Revertに対応
 - add: prefabファイルと同じ値のプロパティだけをRevertする機能を追加
 - change: ウィンドウ上でクリックして選択したコンポーネントでのみプロパティの変更内容を表示するようにした
