@@ -718,8 +718,8 @@ namespace MizoreNekoyanagi.PublishUtil.ApplyPrefab {
                                 RevertButton( itemProp );
                                 RevertSameValueButton( itemSerializedObject, originalSerializedObject, modify );
                             }
-                            DrawSeparator( );
                         }
+                        DrawSeparator( );
                     }
                     EditorGUI.indentLevel--;
                 }
